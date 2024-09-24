@@ -4,11 +4,13 @@ import { LatestPost } from "~/app/_components/post";
 import { getServerAuthSession } from "~/server/auth";
 import { api, HydrateClient } from "~/trpc/server";
 
+export const dynamic = "force-static";
+// export const revalidate = 300;
+
 export default async function Home() {
   const hello = await api.post.hello({ text: "from tRPC" });
-  const session = await getServerAuthSession();
 
-  console.log(session);
+  const session = await getServerAuthSession();
 
   void api.post.getLatest.prefetch();
 
