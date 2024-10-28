@@ -1,11 +1,18 @@
 import "~/styles/globals.css";
 
-import { GeistSans } from "geist/font/sans";
+import { Montserrat } from 'next/font/google';
+
 import { type Metadata } from "next";
 
 import { Toaster } from "~/components/ui/sonner";
 
 import { TRPCReactProvider } from "~/trpc/react";
+import { getServerAuthSession } from "~/server/auth";
+import { ReduxProvider } from "./_lib/context/redux";
+
+import { api } from "~/trpc/server";
+// import { Provider } from "react-redux";
+// import store from "~/client-store";
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -13,15 +20,24 @@ export const metadata: Metadata = {
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 
-export default function RootLayout({
+const montserrat = Montserrat({ subsets: ['latin'] });
+
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+
+  // await api.schedule.generate({groupId: 'is-313'})
+  
   return (
-    <html lang="ru" className={`${GeistSans.variable}`}>
+    <html lang="ru" className={`${montserrat.className}`}>
       <body>
-        <TRPCReactProvider>{children}</TRPCReactProvider>
+        <TRPCReactProvider>
+          <ReduxProvider>
+            {children}
+          </ReduxProvider>
+        </TRPCReactProvider>
         <Toaster />
-      </body> 
+      </body>
     </html>
   );
 }

@@ -1,4 +1,5 @@
-import { z } from "zod";
+import {z} from "~/lib/utils/zod-russian"
+
 
 import {
   createTRPCRouter,
@@ -16,7 +17,6 @@ export const authRouter = createTRPCRouter({
         password: z.string().min(8),
     })).mutation(async ({ ctx, input }) => {
         const user = await createUser(input.name, input.email, input.password);
-
         return user;
     }),
 });

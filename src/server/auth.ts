@@ -11,6 +11,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 
 import { env } from "~/env";
 import { db } from "~/server/db";
+import { User } from "~/types/user";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -20,12 +21,9 @@ import { db } from "~/server/db";
  */
 declare module "next-auth" {
   interface Session extends DefaultSession {
-    user: {
-      id: string;
-      // ...other properties
-      // role: UserRole;
-    } & DefaultSession["user"];
+    user?: User;
   }
+
 
   // interface User {
   //   // ...other properties
@@ -40,20 +38,37 @@ declare module "next-auth" {
  */
 export const authOptions: NextAuthOptions = {
   callbacks: {
-    session: ({user, session, token}) => {
+    session: ({ session, token }) => {
       return ({
         ...session,
-        user: {
-          ...session.user,
-          id: token.id,
-        },
+        user: token.user as User | undefined
       })
     },
-    async jwt({ token, user }) {
-      console.log(token, user);
-      if (user) {
-        token.id = user.id; // Добавить id пользователя в токен
+    async jwt({ token }) {
+      if (token.sub) {
+        let data = await db.user.findFirst({
+          where: {
+            id: token.sub,
+          },
+          include: {
+            Group: true,
+            Favourites: {
+              include: {
+                Group: true,
+                Teacher: true
+              }
+            }
+          }
+        })
+
+        if (data) {
+          // @ts-ignore
+          delete data.password
+
+          token = { ...token, user: data }
+        }
       }
+
       return token;
     },
   },
@@ -76,11 +91,13 @@ export const authOptions: NextAuthOptions = {
           where: { email },
         });
 
-        console.log(user);
-
         // Если пользователь найден и пароли совпадают
         if (user && (await compare(password, user.password))) {
-          return user; // Вернуть данные пользователя, если авторизация успешна
+          return {
+            name: user.name,
+            email: user.email,
+            id: user.id,
+          }; // Вернуть данные пользователя, если авторизация успешна
         }
 
         // Если авторизация не удалась, вернуть null
